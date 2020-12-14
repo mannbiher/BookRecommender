@@ -8,14 +8,14 @@ source('functions/train_ubcf.R')
 get_user_ratings <- function(value_list) {
   # filter value_list to select items with select_ name
   selected_list <- list()
-  for(entry in names(value_list)) {
-    if(startsWith(entry, 'select_')) {
+  for (entry in names(value_list)) {
+    if (startsWith(entry, 'select_')) {
       selected_list[[entry]] = value_list[[entry]]
     }
   }
-
+  
   value_list <- selected_list
-
+  
   dat <- data.table(
     MovieID = sapply(strsplit(names(value_list), "_"),
                      function(x)
@@ -32,9 +32,9 @@ get_user_ratings <- function(value_list) {
 myurl <- "https://liangfgithub.github.io/MovieData/"
 movies <- readLines(paste0(myurl, 'movies.dat?raw=true'))
 movies <- strsplit(movies,
-                  split = "::",
-                  fixed = TRUE,
-                  useBytes = TRUE)
+                   split = "::",
+                   fixed = TRUE,
+                   useBytes = TRUE)
 movies <- matrix(unlist(movies), ncol = 3, byrow = TRUE)
 movies <- data.frame(movies, stringsAsFactors = FALSE)
 colnames(movies) <- c('MovieID', 'Title', 'Genres')
@@ -43,15 +43,15 @@ movies$Title <- iconv(movies$Title, "latin1", "UTF-8")
 
 small_image_url <- "https://liangfgithub.github.io/MovieImages/"
 movies$image_url <- sapply(movies$MovieID,
-                          function(x)
-                            paste0(small_image_url, x, '.jpg?raw=true'))
+                           function(x)
+                             paste0(small_image_url, x, '.jpg?raw=true'))
 
 
 rating_data <- load_rating()
 train_rating_matrix <- create_rating_matrix(rating_data)
 rec_ubcf <- train_ubcf(train_rating_matrix)
 # read genre csv
-movies_by_genres <- read.csv('data/Top10Genres.csv', header=TRUE)
+movies_by_genres <- read.csv('data/Top10Genres.csv', header = TRUE)
 
 shinyServer(function(input, output, session) {
   # show the books to be rated
@@ -91,19 +91,20 @@ shinyServer(function(input, output, session) {
       # get the user's rating data
       value_list <- reactiveValuesToList(input)
       user_ratings <- get_user_ratings(value_list)
-
+      
       # identify current user as 9999
       userid = 9999
       user_ratings$UserID = userid
-      user_sparse <- create_rating_matrix(user_ratings, train_rating_matrix)
-
-      predicted <- predict(rec_ubcf, 
-        user_sparse, n = 10, type="topNList")
-
+      user_sparse <-
+        create_user_rating_matrix(user_ratings, train_rating_matrix)
+      
+      predicted <- predict(rec_ubcf,
+                           user_sparse, n = 10, type = "topNList")
+      
       # extract movie Ids and ratings
       user_predicted_ids = slot(predicted, 'items')[[1]]
       user_results = slot(predicted, 'ratings')[[1]]
-
+      
       movie_index = which(movies$MovieID %in% user_predicted_ids)
       
       recom_results <- data.table(
@@ -155,7 +156,7 @@ shinyServer(function(input, output, session) {
         "document.querySelector('[data-widget=collapse]').click();"
       runjs(jsCode)
       
-      selected_genre = movies_by_genres[movies_by_genres$Genres == input$genre,]
+      selected_genre = movies_by_genres[movies_by_genres$Genres == input$genre, ]
       movie_index = which(movies$MovieID %in% selected_genre$MovieID)
       # print(movies$Title[movies$MovieID %in% selected_genre$MovieID])
       # print(selected_genre$MovieID)

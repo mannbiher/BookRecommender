@@ -1,6 +1,6 @@
 library(recommenderlab)
 library(Matrix)
-set.seed(7672)
+# set.seed(7672)
 
 load_rating <- function() {
     myurl = "https://liangfgithub.github.io/MovieData/"
@@ -12,7 +12,7 @@ load_rating <- function() {
     )
     colnames(ratings) = c('UserID', 'MovieID', 'Rating', 'Timestamp')
     return(ratings)
-
+    
 }
 
 
@@ -28,24 +28,31 @@ train_ubcf <- function(Rmat) {
     )
 }
 
-create_rating_matrix <- function(data, base_matrix=NULL) {
+create_rating_matrix <- function(data) {
     i = paste0('u', data$UserID)
     j = paste0('m', data$MovieID)
     x = data$Rating
     tmp = data.frame(i, j, x, stringsAsFactors = T)
-    if (is.null(base_matrix)) {
-        mat_colnames <- levels(tmp$j)
-        mat_dims <- c(max(as.integer(tmp$i)), max(as.integer(tmp$j)))
-        # dim_matrix = 
-    } else {
-        mat_colnames <- colnames(base_matrix)
-        mat_dims <- c(1, ncol(base_matrix))
-        print(mat_dims)
-    }
-    
-    Rmat = sparseMatrix(as.integer(tmp$i), as.integer(tmp$j), x = tmp$x, dims=mat_dims)
+    Rmat = sparseMatrix(as.integer(tmp$i), as.integer(tmp$j), x = tmp$x)
     rownames(Rmat) = levels(tmp$i)
-    colnames(Rmat) = mat_colnames
+    colnames(Rmat) = levels(tmp$j)
+    Rmat = new('realRatingMatrix', data = Rmat)
+    return(Rmat)
+}
+
+create_user_rating_matrix <- function(data, base_matrix) {
+    i = paste0('u', data$UserID)
+    j = paste0('m', data$MovieID)
+    x = data$Rating
+    tmp = data.frame(i, j, x, stringsAsFactors = T)
+    Rmat = sparseMatrix(
+        as.integer(tmp$i),
+        as.integer(tmp$j),
+        x = tmp$x,
+        dims = c(1, ncol(base_matrix))
+    )
+    rownames(Rmat) = levels(tmp$i)
+    colnames(Rmat) = colnames(base_matrix)
     Rmat = new('realRatingMatrix', data = Rmat)
     return(Rmat)
 }
